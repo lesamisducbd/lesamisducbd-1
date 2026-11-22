@@ -8,7 +8,16 @@ error_reporting(0);
 require(dirname(__FILE__) . '/config/config.inc.php');
 require(dirname(__FILE__) . '/init.php'); // Requis pour initialiser Smarty et Context
 
-$secret_key = Configuration::get('PS_SAS_SECRET_KEY') ?: 'LacBc67_9sP@!CBD2026_SecureKey';
+/**
+ * Secrets de signature : lus dans app/config/sas_secrets.php (fichier présent uniquement sur le serveur,
+ * jamais dans le dépôt). Même fichier que sas.php. Voir sas_secrets.example.php.
+ */
+$sas_secrets_file = dirname(__FILE__) . '/app/config/sas_secrets.php';
+$sas_secrets = is_file($sas_secrets_file) ? include $sas_secrets_file : [];
+$sas_secrets = array_values(array_filter((array)$sas_secrets, 'is_string'));
+if (!$sas_secrets) {
+    die('Erreur : configuration de sécurité manquante.');
+}
 
 $id_order = (int)Tools::getValue('id_order');
 $id_customer = (int)Tools::getValue('id_customer');
@@ -24,9 +33,15 @@ if (time() > ($ts + 1800)) { // 30 minutes de validité
 }
 
 $payload = $id_order . '-' . $id_customer . '-' . $ts;
-$expected_signature = hash_hmac('sha256', $payload, $secret_key);
+$signature_valide = false;
+foreach ($sas_secrets as $secret_key) {
+    if (hash_equals(hash_hmac('sha256', $payload, $secret_key), (string)$signature)) {
+        $signature_valide = true;
+        break;
+    }
+}
 
-if (!hash_equals($expected_signature, $signature)) {
+if (!$signature_valide) {
     die('Erreur : Signature invalide.');
 }
 

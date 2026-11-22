@@ -50,3 +50,6 @@ api.php
 .claudeignore
 CLAUDE.md
 .claude
+# Secrets de rotation (sas.php / invoice.php) : ne jamais commiter
+scratch/rotation/
+sas_secrets.php

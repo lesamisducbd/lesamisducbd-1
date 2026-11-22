@@ -10,7 +10,18 @@ error_reporting(E_ALL);
 require(dirname(__FILE__) . '/config/config.inc.php');
 require(dirname(__FILE__) . '/init.php');
 
-$secret_key = 'LacBc67_9sP@!CBD2026_SecureKey';
+/**
+ * Secrets de signature : lus dans app/config/sas_secrets.php (fichier présent uniquement sur le serveur,
+ * jamais dans le dépôt). Il renvoie une chaîne ou une liste de chaînes (le premier est le secret courant,
+ * les suivants sont acceptés le temps d'une rotation). Voir sas_secrets.example.php.
+ */
+$sas_secrets_file = dirname(__FILE__) . '/app/config/sas_secrets.php';
+$sas_secrets = is_file($sas_secrets_file) ? include $sas_secrets_file : [];
+$sas_secrets = array_values(array_filter((array)$sas_secrets, 'is_string'));
+if (!$sas_secrets) {
+    header('HTTP/1.0 500 Internal Server Error');
+    die('Erreur : configuration de sécurité manquante.');
+}
 
 $cart_id = (int)Tools::getValue('cart_id');
 $id_customer = (int)Tools::getValue('id_customer');
@@ -33,9 +44,15 @@ if (time() > ($ts + 1800)) {
 }
 
 $payload = $cart_id . '-' . $id_customer . '-' . $ts;
-$expected_signature = hash_hmac('sha256', $payload, $secret_key);
+$signature_valide = false;
+foreach ($sas_secrets as $secret_key) {
+    if (hash_equals(hash_hmac('sha256', $payload, $secret_key), (string)$signature)) {
+        $signature_valide = true;
+        break;
+    }
+}
 
-if (!hash_equals($expected_signature, $signature)) {
+if (!$signature_valide) {
     header('HTTP/1.0 403 Forbidden');
     die('Erreur : Signature de sécurité invalide.');
 }

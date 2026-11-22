@@ -1,7 +1,11 @@
 const crypto = require('crypto');
 const fs = require('fs');
 
-const secretKey = 'LacBc67_9sP@!CBD2026_SecureKey';
+const secretKey = process.env.PRESTASHOP_SAS_SECRET_KEY;
+if (!secretKey) {
+    console.error('PRESTASHOP_SAS_SECRET_KEY non définie (ex : export PRESTASHOP_SAS_SECRET_KEY=... avant de lancer).');
+    process.exit(1);
+}
 const cartId = 123;
 const customerId = 45;
 const ts = Math.floor(Date.now() / 1000);
