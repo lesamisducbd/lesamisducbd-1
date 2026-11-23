@@ -65,6 +65,12 @@ if (!Validate::isLoadedObject($context->shop)) {
 
 if ($id_customer > 0) {
     $customer = new Customer($id_customer);
+    // PrestaShop 9 : un PUT /customers du WebService (mise à jour du groupe) vide la `secure_key`, et la création
+    // de commande échoue alors (colonne orders.secure_key non nulle). On la régénère ici, avant tout, en SQL direct.
+    if (Validate::isLoadedObject($customer) && empty($customer->secure_key)) {
+        $customer->secure_key = md5(uniqid((string)mt_rand(), true));
+        Db::getInstance()->update('customer', ['secure_key' => pSQL($customer->secure_key)], 'id_customer = ' . (int)$customer->id);
+    }
     if (Validate::isLoadedObject($customer)) {
         $context->cookie->logout();
         $context->customer = $customer;
