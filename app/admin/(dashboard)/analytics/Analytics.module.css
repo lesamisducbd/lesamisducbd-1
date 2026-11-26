@@ -300,3 +300,45 @@
     background: #fef3c7;
     color: #b45309;
 }
+
+/* Commandes par tranche horaire */
+.slotsTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slotsScroll {
+    overflow-x: auto;
+    margin: 16px 0 24px;
+}
+
+.slotsTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.slotsTable th {
+    color: #64748b;
+    font-weight: 700;
+    padding: 4px;
+}
+
+.slotsTable td {
+    min-width: 30px;
+    padding: 8px 4px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #112924;
+    font-weight: 600;
+}
+
+.slotsSubtitle {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #112924;
+    margin: 0 0 12px;
+}

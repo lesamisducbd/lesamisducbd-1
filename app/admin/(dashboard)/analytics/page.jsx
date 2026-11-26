@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import styles from './Analytics.module.css';
+import OrderSlots from './OrderSlots';
 import Link from 'next/link';
 import { Smartphone, Monitor, Globe, MousePointer, ShoppingBag } from 'lucide-react';
 
@@ -142,7 +143,11 @@ export default function AnalyticsDashboard() {
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 5000);
+        // Chaque rafraîchissement coûte des invocations Vercel et des dizaines de commandes KV :
+        // toutes les 5 minutes, et seulement si l'onglet est visible.
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') fetchData();
+        }, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, []);
 
@@ -236,7 +241,7 @@ export default function AnalyticsDashboard() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Statistiques Avancées</h1>
-                <p className={styles.subtitle}>Temps réel, évolution sur 30 jours, appareils et clics stratégiques.</p>
+                <p className={styles.subtitle}>Actualisées toutes les 5 minutes : commandes, évolution sur 30 jours, appareils et clics stratégiques.</p>
             </div>
 
             {/* KPIs */}
@@ -261,6 +266,8 @@ export default function AnalyticsDashboard() {
                     <div className={styles.kpiSub}>{topPage ? `${topPage.views.toLocaleString('fr-FR')} vues (${topPage.avgTime}s en moy.)` : ''}</div>
                 </div>
             </div>
+
+            <OrderSlots />
 
             {/* 30 Days Trend */}
             <div className={styles.sectionBlock}>
