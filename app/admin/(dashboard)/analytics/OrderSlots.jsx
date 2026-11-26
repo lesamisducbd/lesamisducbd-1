@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Clock } from 'lucide-react';
-import { DAY_LABELS, countWeeks, rankSlots } from '@/lib/utils/orderSlots';
+import { DAY_LABELS, addDays, bucketOrders, rankSlots, shopToday, summarize } from '@/lib/utils/orderSlots';
 import styles from './Analytics.module.css';
 
 const frDate = iso => iso.split('-').reverse().join('/');
-const frNumber = n => n.toLocaleString('fr-FR');
+const frNumber = n => n.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
@@ -24,6 +24,59 @@ const MOMENTS = [
 ];
 
 const DURATIONS = [1, 2, 3, 4].map(h => ({ value: h, label: `${h} h` }));
+
+const PERIODS = [
+    { value: 28, label: '4 semaines' },
+    { value: 91, label: '3 mois' },
+    { value: 182, label: '6 mois' },
+    { value: 365, label: '12 mois' },
+    { value: 'custom', label: 'Dates au choix' },
+];
+
+const UNITS = [
+    { value: 'day', label: 'Par jour' },
+    { value: 'week', label: 'Par semaine' },
+    { value: 'month', label: 'Par mois' },
+];
+
+const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+function bucketLabel(key, unit) {
+    const [y, m, d] = key.split('-');
+    if (unit === 'month') return `${MONTHS[m - 1]} ${y.slice(2)}`;
+    return `${d}/${m}`;
+}
+
+function Evolution({ buckets, unit }) {
+    const scroller = useRef(null);
+    const max = Math.max(1, ...buckets.map(b => b.count));
+
+    // Les périodes les plus récentes sont à droite : on s'y place.
+    useEffect(() => {
+        if (scroller.current) scroller.current.scrollLeft = scroller.current.scrollWidth;
+    }, [buckets]);
+
+    return (
+        <div className={styles.bars} ref={scroller}>
+            {buckets.map(bucket => (
+                <div
+                    key={bucket.key}
+                    className={styles.barColumn}
+                    title={`${unit === 'week' ? 'Semaine du ' : ''}${bucketLabel(bucket.key, unit)} : ${bucket.count} commande(s)${bucket.partial ? ' (période incomplète)' : ''}`}
+                >
+                    <span className={styles.barValue}>{bucket.count}</span>
+                    <span className={styles.barTrack}>
+                        <span
+                            className={`${styles.bar} ${bucket.partial ? styles.barPartial : ''}`}
+                            style={{ height: `${(bucket.count / max) * 100}%` }}
+                        />
+                    </span>
+                    <span className={styles.barLabel}>{bucketLabel(bucket.key, unit)}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 function Filter({ label, options, value, onChange }) {
     return (
@@ -51,6 +104,9 @@ export default function OrderSlots() {
     const [sort, setSort] = useState('quiet');
     const [moment, setMoment] = useState('day');
     const [duration, setDuration] = useState(3);
+    const [period, setPeriod] = useState(182);
+    const [custom, setCustom] = useState({ from: '', to: '' });
+    const [unit, setUnit] = useState('week');
 
     // Chargé une seule fois à l'ouverture : hors du rafraîchissement automatique de la page.
     useEffect(() => {
@@ -60,10 +116,28 @@ export default function OrderSlots() {
             .catch(() => setFailed(true));
     }, []);
 
-    const max = data ? Math.max(1, ...data.grid.flat()) : 1;
-    const weeks = data && data.total > 0 ? countWeeks(data.from, data.to) : 1;
-    const slots = data && data.total > 0
-        ? rankSlots(data.grid, weeks, { ...MOMENTS.find(m => m.value === moment), duration, busiest: sort === 'busy' })
+    // Période choisie, limitée aux données disponibles. Les périodes prédéfinies s'arrêtent à hier
+    // (la journée en cours est incomplète).
+    const today = shopToday();
+    const hasData = Boolean(data && data.first);
+    let from = null;
+    let to = null;
+    if (hasData) {
+        const clamp = date => (date < data.first ? data.first : date > today ? today : date);
+        if (period === 'custom') {
+            from = clamp(custom.from || addDays(today, -28));
+            to = clamp(custom.to || today);
+            if (from > to) [from, to] = [to, from];
+        } else {
+            to = clamp(addDays(today, -1));
+            from = clamp(addDays(to, 1 - period));
+        }
+    }
+    const stats = hasData ? summarize(data.days, from, to) : null;
+    const max = stats ? Math.max(1, ...stats.grid.flat()) : 1;
+    const shortened = hasData && period !== 'custom' && stats.nbDays < period;
+    const slots = stats
+        ? rankSlots(stats.grid, stats.dayCounts, { ...MOMENTS.find(m => m.value === moment), duration, busiest: sort === 'busy' })
         : [];
 
     return (
@@ -74,17 +148,44 @@ export default function OrderSlots() {
 
             {failed && <p className={styles.subtitle}>Commandes indisponibles pour le moment.</p>}
             {!failed && !data && <p className={styles.subtitle}>Chargement des commandes...</p>}
-            {data && data.total === 0 && <p className={styles.subtitle}>Aucune commande sur la période.</p>}
+            {data && !hasData && <p className={styles.subtitle}>Aucune commande trouvée.</p>}
 
-            {data && data.total > 0 && (
+            {stats && (
                 <>
-                    <p className={styles.subtitle}>
-                        {frNumber(data.total)} commandes du {frDate(data.from)} au {frDate(data.to)}, soit environ {Math.round(weeks)} semaines (heure de la boutique).
+                    <Filter label="Période" options={PERIODS} value={period} onChange={setPeriod} />
+                    {period === 'custom' && (
+                        <div className={styles.filterRow}>
+                            <label className={styles.dateField}>
+                                Du
+                                <input type="date" min={data.first} max={today} value={from} onChange={e => setCustom({ from: e.target.value, to })} />
+                            </label>
+                            <label className={styles.dateField}>
+                                au
+                                <input type="date" min={data.first} max={today} value={to} onChange={e => setCustom({ from, to: e.target.value })} />
+                            </label>
+                        </div>
+                    )}
+
+                    <p className={styles.periodNote}>
+                        Tous les chiffres ci-dessous portent sur la période <strong>du {frDate(from)} au {frDate(to)}</strong> ({frNumber(stats.nbDays)} jour{stats.nbDays > 1 ? 's' : ''}, heure de la boutique, tous statuts de commande confondus).
+                        {shortened && ` Les commandes chargées commencent au ${frDate(data.first)}.`}
                     </p>
 
-                    <h3 className={styles.slotsSubtitle}>Total sur toute la période</h3>
+                    <ul className={styles.summaryList}>
+                        <li><strong>{frNumber(stats.total)}</strong> commandes au total</li>
+                        <li><strong>{frNumber(stats.total / stats.nbDays)}</strong> par jour en moyenne</li>
+                        {stats.nbDays >= 7 && <li><strong>{frNumber((stats.total / stats.nbDays) * 7)}</strong> par semaine en moyenne</li>}
+                        {stats.nbDays >= 30 && <li><strong>{frNumber((stats.total / stats.nbDays) * (365 / 12))}</strong> par mois en moyenne</li>}
+                    </ul>
+
+                    <h3 className={styles.slotsSubtitle}>Évolution des commandes</h3>
+                    <Filter label="Afficher" options={UNITS} value={unit} onChange={setUnit} />
+                    {unit !== 'day' && <p className={styles.slotsHelp}>Les barres claires sont des semaines ou des mois incomplets.</p>}
+                    <Evolution buckets={bucketOrders(data.days, from, to, unit)} unit={unit} />
+
+                    <h3 className={styles.slotsSubtitle}>Total par jour de semaine et par heure</h3>
                     <p className={styles.slotsHelp}>
-                        Chaque case additionne les commandes reçues ce jour-là pendant cette heure, sur toute la période (ce n&apos;est pas une moyenne). Plus la case est verte, plus il y en a eu.
+                        Chaque case additionne les commandes reçues ce jour-là pendant cette heure, sur la période choisie (ce n&apos;est pas une moyenne). Plus la case est verte, plus il y en a eu.
                     </p>
 
                     <div className={styles.slotsScroll}>
@@ -96,7 +197,7 @@ export default function OrderSlots() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.grid.map((day, d) => (
+                                {stats.grid.map((day, d) => (
                                     <tr key={DAY_LABELS[d]}>
                                         <th>{DAY_LABELS[d].slice(0, 3)}</th>
                                         {HOURS.map(h => (
@@ -120,12 +221,12 @@ export default function OrderSlots() {
                     <Filter label="Durée" options={DURATIONS} value={duration} onChange={setDuration} />
 
                     <p className={styles.slotsHelp}>
-                        Les 3 jours les {sort === 'busy' ? 'plus chargés' : 'plus calmes'}, avec le nombre moyen de commandes sur ce créneau.
+                        Les 3 jours les {sort === 'busy' ? 'plus chargés' : 'plus calmes'}. Moyenne par jour concerné : par exemple, pour un samedi, les commandes du créneau sont divisées par le nombre de samedis de la période.
                     </p>
                     <ul className={styles.listBlock}>
                         {slots.map(slot => (
                             <li key={slot.day} className={styles.listItem}>
-                                <span>{DAY_LABELS[slot.day]} de {slot.start}h à {slot.end}h</span>
+                                <span>{DAY_LABELS[slot.day]} de {slot.start}h à {slot.end}h ({slot.count} cmd sur {stats.dayCounts[slot.day]} {DAY_LABELS[slot.day].toLowerCase()}{stats.dayCounts[slot.day] > 1 ? 's' : ''})</span>
                                 <strong>{frNumber(slot.average)} cmd</strong>
                             </li>
                         ))}
