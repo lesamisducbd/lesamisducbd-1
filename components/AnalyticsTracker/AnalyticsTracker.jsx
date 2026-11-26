@@ -3,6 +3,26 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
+const VISITOR_KEY = 'lad_visitor';
+const VISITOR_MAX_AGE_MS = 395 * 24 * 60 * 60 * 1000; // 13 mois (durée maximale pour la mesure d'audience)
+
+// Identifiant anonyme et aléatoire, propre à ce site, pour compter les visiteurs uniques.
+// Renvoyé seulement à la première page vue de la journée (UTC, comme les clés quotidiennes).
+function getVisitorToReport() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        let visitor = JSON.parse(localStorage.getItem(VISITOR_KEY));
+        if (!visitor?.id || Date.now() - visitor.created > VISITOR_MAX_AGE_MS) {
+            visitor = { id: crypto.randomUUID(), created: Date.now() };
+            localStorage.setItem(VISITOR_KEY, JSON.stringify(visitor));
+        }
+        if (visitor.reported === today) return null;
+        return { ...visitor, reported: today };
+    } catch {
+        return null; // stockage refusé : la visite n'est pas comptée comme visiteur
+    }
+}
+
 export default function AnalyticsTracker() {
     const pathname = usePathname();
     const startTimeRef = useRef(Date.now());
@@ -56,11 +76,19 @@ export default function AnalyticsTracker() {
             const device = window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop';
             const referrer = document.referrer ? new URL(document.referrer).hostname : 'direct';
 
+            const visitor = getVisitorToReport();
+
             fetch('/api/analytics', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'view', page: pageId, device, referrer })
-            }).catch(e => console.error('Analytics view error:', e));
+                body: JSON.stringify({ type: 'view', page: pageId, device, referrer, visitorId: visitor?.id })
+            })
+                .then(res => res.json())
+                .then(result => {
+                    // Noté comme compté seulement si l'enregistrement a réussi.
+                    if (visitor && result.success) localStorage.setItem(VISITOR_KEY, JSON.stringify(visitor));
+                })
+                .catch(e => console.error('Analytics view error:', e));
         }
     }, [pathname]);
 

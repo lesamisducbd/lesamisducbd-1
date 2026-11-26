@@ -202,8 +202,7 @@ export default function AnalyticsDashboard() {
         return <div className={styles.container}>Chargement des statistiques avancées...</div>;
     }
 
-    const { viewsMap, ctaMap, deviceMap, referrerMap, dailyStats } = analytics;
-    const totalViews = Object.values(viewsMap).reduce((a, b) => a + b, 0);
+    const { viewsMap, ctaMap, deviceMap, referrerMap, dailyStats, visitors } = analytics;
     const topPage = [...allPages].sort((a, b) => b.views - a.views)[0] || null;
     
     // Sort referrers (exclude localhost and own domain for existing data)
@@ -247,9 +246,13 @@ export default function AnalyticsDashboard() {
             {/* KPIs */}
             <div className={styles.kpiGrid}>
                 <div className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>Total des vues</div>
-                    <div className={styles.kpiValue}>{totalViews.toLocaleString('fr-FR')}</div>
-                    <div className={styles.kpiSub}>Sur tout le site</div>
+                    <div className={styles.kpiLabel}>Visiteurs uniques</div>
+                    <div className={styles.kpiValue}>{visitors?.since ? visitors.total.toLocaleString('fr-FR') : '-'}</div>
+                    <div className={styles.kpiSub}>
+                        {visitors?.since
+                            ? `Depuis le ${visitors.since.split('-').reverse().join('/')} · 30 jours : ${visitors.last30.toLocaleString('fr-FR')} · aujourd'hui : ${visitors.today.toLocaleString('fr-FR')}`
+                            : 'Comptage en cours de démarrage'}
+                    </div>
                 </div>
                 <div className={styles.kpiCard}>
                     <div className={styles.kpiLabel}>Trafic Mobile vs Desktop</div>

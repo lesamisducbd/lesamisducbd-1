@@ -8,7 +8,7 @@ export async function POST(req) {
 
     try {
         const body = await req.json();
-        const { type, page, device, referrer, duration, ctaId } = body;
+        const { type, page, device, referrer, duration, ctaId, visitorId } = body;
         
         // Get today's date in YYYY-MM-DD format
         const today = new Date().toISOString().split('T')[0];
@@ -23,6 +23,16 @@ export async function POST(req) {
             // Increment daily views
             pipeline.hincrby(dailyKey, `views:${page}`, 1);
             
+            // Visiteurs uniques : HyperLogLog (taille fixe, compte approché à environ 1 %).
+            // Le navigateur n'envoie l'identifiant qu'une fois par jour.
+            if (typeof visitorId === 'string' && /^[0-9a-f-]{36}$/i.test(visitorId)) {
+                const visitorsKey = `analytics:visitors:${today}`;
+                pipeline.pfadd('analytics:visitors:total', visitorId);
+                pipeline.pfadd(visitorsKey, visitorId);
+                pipeline.expire(visitorsKey, 400 * 24 * 60 * 60);
+                pipeline.set('analytics:visitors:since', today, { nx: true });
+            }
+
             // Increment device stats
             if (device) {
                 pipeline.hincrby(totalsKey, `device:${device}`, 1);

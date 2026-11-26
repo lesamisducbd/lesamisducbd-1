@@ -59,6 +59,15 @@ export async function GET(request) {
         }
         const dailyResults = await dailyPipeline.exec();
 
+        // Visiteurs uniques (PFCOUNT sur plusieurs clés = union, sans doublon d'un jour à l'autre)
+        const visitorKeys = dates.map(date => `analytics:visitors:${date}`);
+        const [visitorsTotal, visitors30, visitorsToday, visitorsSince] = await kv.pipeline()
+            .pfcount('analytics:visitors:total')
+            .pfcount(...visitorKeys)
+            .pfcount(visitorKeys[visitorKeys.length - 1])
+            .get('analytics:visitors:since')
+            .exec();
+
         // 4. Transform and merge data
         const viewsMap = { ...legacyViewsMap };
         const timeMap = {};
@@ -104,7 +113,8 @@ export async function GET(request) {
             ctaMap,
             deviceMap,
             referrerMap,
-            dailyStats
+            dailyStats,
+            visitors: { total: visitorsTotal, last30: visitors30, today: visitorsToday, since: visitorsSince }
         });
     } catch (error) {
         console.error('Analytics GET error (safe fallback returned):', error.message);
