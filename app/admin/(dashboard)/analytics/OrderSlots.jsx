@@ -78,22 +78,21 @@ function Evolution({ buckets, unit }) {
     );
 }
 
+// Menu déroulant. La valeur d'origine (texte ou nombre) est rendue à onChange.
 function Filter({ label, options, value, onChange }) {
     return (
-        <div className={styles.filterRow} role="group" aria-label={label}>
+        <label className={styles.filterField}>
             <span className={styles.filterLabel}>{label}</span>
-            {options.map(option => (
-                <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.chip} ${option.value === value ? styles.chipActive : ''}`}
-                    aria-pressed={option.value === value}
-                    onClick={() => onChange(option.value)}
-                >
-                    {option.label}
-                </button>
-            ))}
-        </div>
+            <select
+                className={styles.select}
+                value={value}
+                onChange={e => onChange(options.find(o => String(o.value) === e.target.value).value)}
+            >
+                {options.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </select>
+        </label>
     );
 }
 
@@ -134,6 +133,7 @@ export default function OrderSlots() {
         }
     }
     const stats = hasData ? summarize(data.days, from, to) : null;
+    const range = hasData ? `du ${frDate(from)} au ${frDate(to)}` : '';
     const max = stats ? Math.max(1, ...stats.grid.flat()) : 1;
     const shortened = hasData && period !== 'custom' && stats.nbDays < period;
     const slots = stats
@@ -152,19 +152,21 @@ export default function OrderSlots() {
 
             {stats && (
                 <>
-                    <Filter label="Période" options={PERIODS} value={period} onChange={setPeriod} />
-                    {period === 'custom' && (
-                        <div className={styles.filterRow}>
-                            <label className={styles.dateField}>
-                                Du
-                                <input type="date" min={data.first} max={today} value={from} onChange={e => setCustom({ from: e.target.value, to })} />
-                            </label>
-                            <label className={styles.dateField}>
-                                au
-                                <input type="date" min={data.first} max={today} value={to} onChange={e => setCustom({ from, to: e.target.value })} />
-                            </label>
-                        </div>
-                    )}
+                    <div className={styles.filterRow}>
+                        <Filter label="Période" options={PERIODS} value={period} onChange={setPeriod} />
+                        {period === 'custom' && (
+                            <>
+                                <label className={styles.dateField}>
+                                    Du
+                                    <input type="date" min={data.first} max={today} value={from} onChange={e => setCustom({ from: e.target.value, to })} />
+                                </label>
+                                <label className={styles.dateField}>
+                                    au
+                                    <input type="date" min={data.first} max={today} value={to} onChange={e => setCustom({ from, to: e.target.value })} />
+                                </label>
+                            </>
+                        )}
+                    </div>
 
                     <p className={styles.periodNote}>
                         Tous les chiffres ci-dessous portent sur la période <strong>du {frDate(from)} au {frDate(to)}</strong> ({frNumber(stats.nbDays)} jour{stats.nbDays > 1 ? 's' : ''}, heure de la boutique, tous statuts de commande confondus).
@@ -178,12 +180,14 @@ export default function OrderSlots() {
                         {stats.nbDays >= 30 && <li><strong>{frNumber((stats.total / stats.nbDays) * (365 / 12))}</strong> par mois en moyenne</li>}
                     </ul>
 
-                    <h3 className={styles.slotsSubtitle}>Évolution des commandes</h3>
-                    <Filter label="Afficher" options={UNITS} value={unit} onChange={setUnit} />
+                    <h3 className={styles.slotsSubtitle}>Évolution des commandes, {range}</h3>
+                    <div className={styles.filterRow}>
+                        <Filter label="Afficher" options={UNITS} value={unit} onChange={setUnit} />
+                    </div>
                     {unit !== 'day' && <p className={styles.slotsHelp}>Les barres claires sont des semaines ou des mois incomplets.</p>}
                     <Evolution buckets={bucketOrders(data.days, from, to, unit)} unit={unit} />
 
-                    <h3 className={styles.slotsSubtitle}>Total par jour de semaine et par heure</h3>
+                    <h3 className={styles.slotsSubtitle}>Total par jour de semaine et par heure, {range}</h3>
                     <p className={styles.slotsHelp}>
                         Chaque case additionne les commandes reçues ce jour-là pendant cette heure, sur la période choisie (ce n&apos;est pas une moyenne). Plus la case est verte, plus il y en a eu.
                     </p>
@@ -215,10 +219,12 @@ export default function OrderSlots() {
                         </table>
                     </div>
 
-                    <h3 className={styles.slotsSubtitle}>Trouver un créneau</h3>
-                    <Filter label="Afficher" options={SORTS} value={sort} onChange={setSort} />
-                    <Filter label="Moment" options={MOMENTS} value={moment} onChange={setMoment} />
-                    <Filter label="Durée" options={DURATIONS} value={duration} onChange={setDuration} />
+                    <h3 className={styles.slotsSubtitle}>Trouver un créneau, {range}</h3>
+                    <div className={styles.filterRow}>
+                        <Filter label="Afficher" options={SORTS} value={sort} onChange={setSort} />
+                        <Filter label="Moment" options={MOMENTS} value={moment} onChange={setMoment} />
+                        <Filter label="Durée" options={DURATIONS} value={duration} onChange={setDuration} />
+                    </div>
 
                     <p className={styles.slotsHelp}>
                         Les 3 jours les {sort === 'busy' ? 'plus chargés' : 'plus calmes'}. Moyenne par jour concerné : par exemple, pour un samedi, les commandes du créneau sont divisées par le nombre de samedis de la période.

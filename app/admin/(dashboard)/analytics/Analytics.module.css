@@ -353,38 +353,37 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 10px 20px;
     margin: 10px 0;
 }
 
+.filterField {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .filterLabel {
-    min-width: 70px;
     font-size: 0.8rem;
     font-weight: 800;
     color: #64748b;
     text-transform: uppercase;
 }
 
-.chip {
-    padding: 6px 14px;
+.select {
+    padding: 8px 12px;
     border: 1px solid #e2e8f0;
-    border-radius: 99px;
+    border-radius: 8px;
     background: #fff;
-    color: #334155;
+    color: #112924;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
 }
 
-.chip:hover {
-    border-color: #00FF94;
-}
-
-.chipActive {
-    background: #1F4B40;
-    border-color: #1F4B40;
-    color: #fff;
+.select:focus-visible {
+    outline: 2px solid #00FF94;
 }
 
 .dateField {
