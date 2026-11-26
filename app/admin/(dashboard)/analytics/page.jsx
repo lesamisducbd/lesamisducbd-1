@@ -6,6 +6,10 @@ import OrderSlots from './OrderSlots';
 import Link from 'next/link';
 import { Smartphone, Monitor, Globe, MousePointer, ShoppingBag } from 'lucide-react';
 
+// Visiteurs d'avant le comptage réel : ESTIMATION, pas une mesure. 54 960 pages vues du 10/06 au 26/11/2026,
+// divisées par 3 pages par visite puis 2 visites par personne (hypothèses), arrondies.
+const ESTIMATED_PAST_VISITORS = 9000;
+
 const STATIC_PAGES = {
     'accueil': "Page d'Accueil",
     'essentiel': "L'Essentiel",
@@ -246,12 +250,13 @@ export default function AnalyticsDashboard() {
             {/* KPIs */}
             <div className={styles.kpiGrid}>
                 <div className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>Visiteurs uniques</div>
-                    <div className={styles.kpiValue}>{visitors?.since ? visitors.total.toLocaleString('fr-FR') : '-'}</div>
+                    <div className={styles.kpiLabel}>Visiteurs uniques (estimation)</div>
+                    <div className={styles.kpiValue}>
+                        ≈ {(Math.round((ESTIMATED_PAST_VISITORS + (visitors?.total || 0)) / 100) * 100).toLocaleString('fr-FR')}
+                    </div>
                     <div className={styles.kpiSub}>
-                        {visitors?.since
-                            ? `Depuis le ${visitors.since.split('-').reverse().join('/')} · 30 jours : ${visitors.last30.toLocaleString('fr-FR')} · aujourd'hui : ${visitors.today.toLocaleString('fr-FR')}`
-                            : 'Comptage en cours de démarrage'}
+                        Depuis le 10/06/2026, estimé d&apos;après les pages vues.
+                        {visitors?.since && ` Comptés réellement depuis le ${visitors.since.split('-').reverse().join('/')} : ${visitors.total.toLocaleString('fr-FR')} (aujourd'hui : ${visitors.today.toLocaleString('fr-FR')}).`}
                     </div>
                 </div>
                 <div className={styles.kpiCard}>
