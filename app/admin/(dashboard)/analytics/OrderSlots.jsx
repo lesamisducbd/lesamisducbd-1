@@ -39,6 +39,12 @@ const UNITS = [
     { value: 'month', label: 'Par mois' },
 ];
 
+const TABS = [
+    { value: 'slots', label: 'Trouver un créneau' },
+    { value: 'trend', label: 'Évolution' },
+    { value: 'hours', label: 'Détail par heure' },
+];
+
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
 function bucketLabel(key, unit) {
@@ -106,6 +112,7 @@ export default function OrderSlots() {
     const [period, setPeriod] = useState(182);
     const [custom, setCustom] = useState({ from: '', to: '' });
     const [unit, setUnit] = useState('week');
+    const [tab, setTab] = useState('slots');
 
     // Chargé une seule fois à l'ouverture : hors du rafraîchissement automatique de la page.
     useEffect(() => {
@@ -133,18 +140,51 @@ export default function OrderSlots() {
         }
     }
     const stats = hasData ? summarize(data.days, from, to) : null;
-    const range = hasData ? `du ${frDate(from)} au ${frDate(to)}` : '';
     const max = stats ? Math.max(1, ...stats.grid.flat()) : 1;
     const shortened = hasData && period !== 'custom' && stats.nbDays < period;
     const slots = stats
         ? rankSlots(stats.grid, stats.dayCounts, { ...MOMENTS.find(m => m.value === moment), duration, busiest: sort === 'busy' })
         : [];
 
+    const summary = stats ? [
+        { label: 'commandes', value: stats.total },
+        { label: 'par jour', value: stats.total / stats.nbDays },
+        stats.nbDays >= 7 && { label: 'par semaine', value: (stats.total / stats.nbDays) * 7 },
+        stats.nbDays >= 30 && { label: 'par mois', value: (stats.total / stats.nbDays) * (365 / 12) },
+    ].filter(Boolean) : [];
+
     return (
         <div className={styles.sectionBlock}>
-            <h2 className={`${styles.sectionTitle} ${styles.slotsTitle}`}>
-                <Clock size={18} /> Commandes par tranche horaire
-            </h2>
+            <div className={styles.ordersHeader}>
+                <div>
+                    <h2 className={`${styles.sectionTitle} ${styles.slotsTitle}`}>
+                        <Clock size={18} /> Commandes par tranche horaire
+                    </h2>
+                    {stats && (
+                        <p className={styles.periodNote}>
+                            Du {frDate(from)} au {frDate(to)} · {frNumber(stats.nbDays)} jour{stats.nbDays > 1 ? 's' : ''} · tous statuts, heure de la boutique
+                            {shortened && ' · historique disponible limité'}
+                        </p>
+                    )}
+                </div>
+                {stats && (
+                    <div className={styles.filterRow}>
+                        <Filter label="Période" options={PERIODS} value={period} onChange={setPeriod} />
+                        {period === 'custom' && (
+                            <>
+                                <label className={styles.filterField}>
+                                    <span className={styles.filterLabel}>Du</span>
+                                    <input className={styles.select} type="date" min={data.first} max={today} value={from} onChange={e => setCustom({ from: e.target.value, to })} />
+                                </label>
+                                <label className={styles.filterField}>
+                                    <span className={styles.filterLabel}>Au</span>
+                                    <input className={styles.select} type="date" min={data.first} max={today} value={to} onChange={e => setCustom({ from, to: e.target.value })} />
+                                </label>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {failed && <p className={styles.subtitle}>Commandes indisponibles pour le moment.</p>}
             {!failed && !data && <p className={styles.subtitle}>Chargement des commandes...</p>}
@@ -152,91 +192,93 @@ export default function OrderSlots() {
 
             {stats && (
                 <>
-                    <div className={styles.filterRow}>
-                        <Filter label="Période" options={PERIODS} value={period} onChange={setPeriod} />
-                        {period === 'custom' && (
-                            <>
-                                <label className={styles.dateField}>
-                                    Du
-                                    <input type="date" min={data.first} max={today} value={from} onChange={e => setCustom({ from: e.target.value, to })} />
-                                </label>
-                                <label className={styles.dateField}>
-                                    au
-                                    <input type="date" min={data.first} max={today} value={to} onChange={e => setCustom({ from, to: e.target.value })} />
-                                </label>
-                            </>
-                        )}
-                    </div>
-
-                    <p className={styles.periodNote}>
-                        Tous les chiffres ci-dessous portent sur la période <strong>du {frDate(from)} au {frDate(to)}</strong> ({frNumber(stats.nbDays)} jour{stats.nbDays > 1 ? 's' : ''}, heure de la boutique, tous statuts de commande confondus).
-                        {shortened && ` Les commandes chargées commencent au ${frDate(data.first)}.`}
-                    </p>
-
                     <ul className={styles.summaryList}>
-                        <li><strong>{frNumber(stats.total)}</strong> commandes au total</li>
-                        <li><strong>{frNumber(stats.total / stats.nbDays)}</strong> par jour en moyenne</li>
-                        {stats.nbDays >= 7 && <li><strong>{frNumber((stats.total / stats.nbDays) * 7)}</strong> par semaine en moyenne</li>}
-                        {stats.nbDays >= 30 && <li><strong>{frNumber((stats.total / stats.nbDays) * (365 / 12))}</strong> par mois en moyenne</li>}
-                    </ul>
-
-                    <h3 className={styles.slotsSubtitle}>Évolution des commandes, {range}</h3>
-                    <div className={styles.filterRow}>
-                        <Filter label="Afficher" options={UNITS} value={unit} onChange={setUnit} />
-                    </div>
-                    {unit !== 'day' && <p className={styles.slotsHelp}>Les barres claires sont des semaines ou des mois incomplets.</p>}
-                    <Evolution buckets={bucketOrders(data.days, from, to, unit)} unit={unit} />
-
-                    <h3 className={styles.slotsSubtitle}>Total par jour de semaine et par heure, {range}</h3>
-                    <p className={styles.slotsHelp}>
-                        Chaque case additionne les commandes reçues ce jour-là pendant cette heure, sur la période choisie (ce n&apos;est pas une moyenne). Plus la case est verte, plus il y en a eu.
-                    </p>
-
-                    <div className={styles.slotsScroll}>
-                        <table className={styles.slotsTable}>
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    {HOURS.map(h => <th key={h}>{h}h</th>)}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {stats.grid.map((day, d) => (
-                                    <tr key={DAY_LABELS[d]}>
-                                        <th>{DAY_LABELS[d].slice(0, 3)}</th>
-                                        {HOURS.map(h => (
-                                            <td
-                                                key={h}
-                                                title={`${DAY_LABELS[d]} ${h}h-${h + 1}h : ${day[h]} commande(s)`}
-                                                style={{ background: `rgba(5, 150, 105, ${(day[h] / max) * 0.65})` }}
-                                            >
-                                                {day[h]}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <h3 className={styles.slotsSubtitle}>Trouver un créneau, {range}</h3>
-                    <div className={styles.filterRow}>
-                        <Filter label="Afficher" options={SORTS} value={sort} onChange={setSort} />
-                        <Filter label="Moment" options={MOMENTS} value={moment} onChange={setMoment} />
-                        <Filter label="Durée" options={DURATIONS} value={duration} onChange={setDuration} />
-                    </div>
-
-                    <p className={styles.slotsHelp}>
-                        Les 3 jours les {sort === 'busy' ? 'plus chargés' : 'plus calmes'}. Moyenne par jour concerné : par exemple, pour un samedi, les commandes du créneau sont divisées par le nombre de samedis de la période.
-                    </p>
-                    <ul className={styles.listBlock}>
-                        {slots.map(slot => (
-                            <li key={slot.day} className={styles.listItem}>
-                                <span>{DAY_LABELS[slot.day]} de {slot.start}h à {slot.end}h ({slot.count} cmd sur {stats.dayCounts[slot.day]} {DAY_LABELS[slot.day].toLowerCase()}{stats.dayCounts[slot.day] > 1 ? 's' : ''})</span>
-                                <strong>{frNumber(slot.average)} cmd</strong>
+                        {summary.map(item => (
+                            <li key={item.label} className={styles.summaryCard}>
+                                <strong>{frNumber(item.value)}</strong>
+                                <span>{item.label}</span>
                             </li>
                         ))}
                     </ul>
+
+                    <div className={styles.tabs} role="tablist">
+                        {TABS.map(t => (
+                            <button
+                                key={t.value}
+                                type="button"
+                                role="tab"
+                                aria-selected={tab === t.value}
+                                className={`${styles.tab} ${tab === t.value ? styles.tabActive : ''}`}
+                                onClick={() => setTab(t.value)}
+                            >
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {tab === 'slots' && (
+                        <div role="tabpanel">
+                            <div className={styles.filterRow}>
+                                <Filter label="Afficher" options={SORTS} value={sort} onChange={setSort} />
+                                <Filter label="Moment" options={MOMENTS} value={moment} onChange={setMoment} />
+                                <Filter label="Durée" options={DURATIONS} value={duration} onChange={setDuration} />
+                            </div>
+                            <ol className={styles.slotCards}>
+                                {slots.map((slot, i) => (
+                                    <li key={slot.day} className={`${styles.slotCard} ${i === 0 ? styles.slotCardFirst : ''}`}>
+                                        <span className={styles.slotRank}>n° {i + 1}</span>
+                                        <strong className={styles.slotDay}>{DAY_LABELS[slot.day]}</strong>
+                                        <span className={styles.slotHours}>{slot.start}h à {slot.end}h</span>
+                                        <span className={styles.slotAverage}>
+                                            <strong>{frNumber(slot.average)}</strong> commande{slot.average >= 2 ? 's' : ''} en moyenne
+                                        </span>
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+                    )}
+
+                    {tab === 'trend' && (
+                        <div role="tabpanel">
+                            <div className={styles.filterRow}>
+                                <Filter label="Afficher" options={UNITS} value={unit} onChange={setUnit} />
+                            </div>
+                            <Evolution buckets={bucketOrders(data.days, from, to, unit)} unit={unit} />
+                            {unit !== 'day' && <p className={styles.slotsHelp}>Barre claire : période incomplète.</p>}
+                        </div>
+                    )}
+
+                    {tab === 'hours' && (
+                        <div role="tabpanel">
+                            <p className={styles.slotsHelp}>Nombre total de commandes sur la période. Plus c&apos;est vert, plus il y en a.</p>
+                            <div className={styles.slotsScroll}>
+                                <table className={styles.slotsTable}>
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            {HOURS.map(h => <th key={h}>{h}h</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.grid.map((day, d) => (
+                                            <tr key={DAY_LABELS[d]}>
+                                                <th>{DAY_LABELS[d].slice(0, 3)}</th>
+                                                {HOURS.map(h => (
+                                                    <td
+                                                        key={h}
+                                                        title={`${DAY_LABELS[d]} ${h}h-${h + 1}h : ${day[h]} commande(s)`}
+                                                        style={{ background: `rgba(5, 150, 105, ${(day[h] / max) * 0.65})` }}
+                                                    >
+                                                        {day[h]}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
         </div>
