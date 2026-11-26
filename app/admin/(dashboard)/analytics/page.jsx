@@ -6,9 +6,10 @@ import OrderSlots from './OrderSlots';
 import Link from 'next/link';
 import { Smartphone, Monitor, Globe, MousePointer, ShoppingBag } from 'lucide-react';
 
-// Visiteurs d'avant le comptage réel : ESTIMATION, pas une mesure. 54 960 pages vues du 10/06 au 26/11/2026,
-// divisées par 3 pages par visite puis 2 visites par personne (hypothèses), arrondies.
-const ESTIMATED_PAST_VISITORS = 9000;
+// Visiteurs d'avant le comptage réel : ESTIMATION fixe (elle ne se corrige pas toute seule).
+// Basée sur la page d'accueil : environ 44 vues par jour mesurées par le suivi navigateur (depuis le 05/10/2026),
+// appliquées aux 117 jours précédents (depuis le 10/06), plus les 2 331 vues mesurées ensuite.
+const ESTIMATED_PAST_VISITORS = 7500;
 
 const STATIC_PAGES = {
     'accueil': "Page d'Accueil",
@@ -250,13 +251,13 @@ export default function AnalyticsDashboard() {
             {/* KPIs */}
             <div className={styles.kpiGrid}>
                 <div className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>Visiteurs uniques (estimation)</div>
+                    <div className={styles.kpiLabel}>Visiteurs uniques</div>
                     <div className={styles.kpiValue}>
-                        ≈ {(Math.round((ESTIMATED_PAST_VISITORS + (visitors?.total || 0)) / 100) * 100).toLocaleString('fr-FR')}
+                        {(ESTIMATED_PAST_VISITORS + (visitors?.total || 0)).toLocaleString('fr-FR')}
                     </div>
                     <div className={styles.kpiSub}>
-                        Depuis le 10/06/2026, estimé d&apos;après les pages vues.
-                        {visitors?.since && ` Comptés réellement depuis le ${visitors.since.split('-').reverse().join('/')} : ${visitors.total.toLocaleString('fr-FR')} (aujourd'hui : ${visitors.today.toLocaleString('fr-FR')}).`}
+                        Depuis le 10/06/2026 (estimation avant le 26/11)
+                        {visitors?.since && ` · aujourd'hui : ${visitors.today.toLocaleString('fr-FR')}`}
                     </div>
                 </div>
                 <div className={styles.kpiCard}>
