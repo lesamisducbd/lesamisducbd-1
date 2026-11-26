@@ -1,11 +1,9 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { jwtVerify } from 'jose';
+import { getJwtKey } from '@/lib/jwtKey';
 import { isMaintenanceEnabled } from '@/lib/maintenance';
 import { MAINTENANCE_HTML } from '@/lib/maintenancePage';
-
-const secretKey = process.env.JWT_SECRET || 'super-secret-key-change-this';
-const key = new TextEncoder().encode(secretKey);
 
 const nextAuthMiddleware = withAuth(
     function middleware(req) {
@@ -34,7 +32,7 @@ async function hasAdminToken(req) {
     const token = req.cookies.get('admin_token')?.value;
     if (!token) return false;
     try {
-        await jwtVerify(token, key, { algorithms: ['HS256'] });
+        await jwtVerify(token, getJwtKey(), { algorithms: ['HS256'] });
         return true;
     } catch {
         return false;
@@ -93,7 +91,7 @@ export default async function middleware(req) {
         }
 
         try {
-            const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] });
+            const { payload } = await jwtVerify(token, getJwtKey(), { algorithms: ['HS256'] });
             
             // Check for superadmin routes
             if (pathname.startsWith('/admin/users')) {

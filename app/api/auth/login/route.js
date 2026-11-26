@@ -27,6 +27,11 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Trop de tentatives. Réessayez plus tard.' }, { status: 429 });
     }
 
+    if (!process.env.JWT_SECRET) {
+        console.error('Login admin impossible : la variable JWT_SECRET n\'est pas définie.');
+        return NextResponse.json({ success: false, message: 'Configuration serveur incomplète' }, { status: 500 });
+    }
+
     const body = await request.json();
     const { username, password } = body;
 
@@ -86,8 +91,9 @@ export async function POST(request) {
     // 2. Master Emergency Fallback Check (ENV credentials)
     const adminExistsInDb = dbUsers && dbUsers.some(u => u?.username?.toLowerCase() === 'admin');
     if (!kvAvailable || (!adminExistsInDb && username.toLowerCase() === 'admin')) {
-        const envAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-        if (username.toLowerCase() === 'admin' && password === envAdminPassword) {
+        // Pas de mot de passe par défaut : sans ADMIN_PASSWORD (ou s'il vaut l'ancien défaut public), pas d'accès de secours
+        const envAdminPassword = process.env.ADMIN_PASSWORD;
+        if (envAdminPassword && envAdminPassword !== 'admin123' && username.toLowerCase() === 'admin' && password === envAdminPassword) {
             rateLimit.delete(ip);
             const sessionId = crypto.randomUUID();
             const token = await signToken({ role: 'superadmin', username: 'admin', sessionId });

@@ -3,15 +3,23 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const PRESTASHOP_BASE_URL = process.env.NEXT_PUBLIC_PRESTASHOP_URL || 'https://my.lesamisducbd.fr';
-const REWARDS_API_SECRET = process.env.REWARDS_API_SECRET || 'SecretFidelite2026XyZ';
+// Secret partagé avec le module PrestaShop allinone_rewards : aucune valeur de repli
+const REWARDS_API_SECRET = process.env.REWARDS_API_SECRET;
+
+function notConfigured() {
+    console.error('Rewards API : la variable REWARDS_API_SECRET n\'est pas définie.');
+    return NextResponse.json({ error: 'Programme de fidélité indisponible' }, { status: 503 });
+}
 
 export async function GET(request) {
     try {
+        if (!REWARDS_API_SECRET) return notConfigured();
+
         const url = new URL(request.url);
         const action = url.searchParams.get('action') || 'get_dashboard';
 
         if (action === 'get_settings') {
-            const prestaUrl = `${PRESTASHOP_BASE_URL}/module/allinone_rewards/api?secret=${REWARDS_API_SECRET}&action=get_settings`;
+            const prestaUrl = `${PRESTASHOP_BASE_URL}/module/allinone_rewards/api?secret=${encodeURIComponent(REWARDS_API_SECRET)}&action=get_settings`;
             const response = await fetch(prestaUrl, { cache: 'no-store' });
             if (!response.ok) throw new Error(`PrestaShop API status: ${response.status}`);
             return NextResponse.json(await response.json());
@@ -33,7 +41,7 @@ export async function GET(request) {
             });
         }
 
-        const prestaUrl = `${PRESTASHOP_BASE_URL}/module/allinone_rewards/api?secret=${REWARDS_API_SECRET}&action=${action}&id_customer=${psCustomerId}`;
+        const prestaUrl = `${PRESTASHOP_BASE_URL}/module/allinone_rewards/api?secret=${encodeURIComponent(REWARDS_API_SECRET)}&action=${action}&id_customer=${psCustomerId}`;
         
         const response = await fetch(prestaUrl, { cache: 'no-store' });
         
@@ -52,6 +60,8 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
+        if (!REWARDS_API_SECRET) return notConfigured();
+
         const session = await getServerSession(authOptions);
         if (!session || !session.user || !session.user.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -65,7 +75,7 @@ export async function POST(request) {
         const body = await request.json();
         const action = body.action || 'convert_points';
 
-        const prestaUrl = `${PRESTASHOP_BASE_URL}/module/allinone_rewards/api?secret=${REWARDS_API_SECRET}&action=${action}&id_customer=${psCustomerId}`;
+        const prestaUrl = `${PRESTASHOP_BASE_URL}/module/allinone_rewards/api?secret=${encodeURIComponent(REWARDS_API_SECRET)}&action=${action}&id_customer=${psCustomerId}`;
         
         const response = await fetch(prestaUrl, {
             method: 'POST',
