@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import cloudinary from '@/lib/cloudinary';
+import { getSession } from '@/lib/auth';
 
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const formData = await request.formData();
         const file = formData.get('file');

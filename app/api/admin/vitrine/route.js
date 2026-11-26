@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
+import { getSession } from '@/lib/auth';
 
 const VITRINE_KEY = 'vitrine_config';
 const HIDDEN_KEY = 'hidden_products';
@@ -25,6 +26,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
 
@@ -53,6 +58,7 @@ export async function POST(request) {
         }
 
         await Promise.all(ops);
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[Vitrine API] POST error:', error);

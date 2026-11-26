@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
+import { getSession } from '@/lib/auth';
 
 const CATEGORIES_KEY = 'product_categories';
 
@@ -21,6 +22,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
         if (!Array.isArray(body)) {

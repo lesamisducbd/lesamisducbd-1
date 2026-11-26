@@ -60,11 +60,12 @@ export default function GlobalContentPage() {
         e.preventDefault();
         setSaving(true);
         try {
-            await fetch('/api/admin/content/global', {
+            const res = await fetch('/api/admin/content/global', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contact, footerLinks, headerLinks, visibility })
             });
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
             alert('Modifications enregistrées !');
         } catch { alert('Erreur lors de la sauvegarde'); }
         finally { setSaving(false); }

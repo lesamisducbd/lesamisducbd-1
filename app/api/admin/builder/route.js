@@ -13,6 +13,10 @@ const MAX_HISTORY = 10; // Keep last 10 versions per page
 
 // GET: Retrieve all pages or a specific page
 export async function GET(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const slug = searchParams.get('slug');
@@ -58,6 +62,10 @@ export async function GET(request) {
 
 // POST: Create or update a page
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
         const { title, sections, seo, status, scheduledAt } = body;
@@ -345,6 +353,10 @@ export async function POST(request) {
 
 // DELETE: Remove a page
 export async function DELETE(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const slug = searchParams.get('slug');

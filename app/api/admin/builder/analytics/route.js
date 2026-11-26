@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
+import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const slug = searchParams.get('slug');
@@ -19,6 +24,10 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         // 1. Fetch legacy views
         const pages = await kv.get('builder_pages') || {};

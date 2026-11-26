@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 
 const PRESTA_GROUP_PRO = 4;
 
 export async function GET() {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const url = process.env.PRESTASHOP_API_URL;
     const key = process.env.PRESTASHOP_API_KEY;
 

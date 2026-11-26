@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
+import { getSession } from '@/lib/auth';
 
 const PARTNERS_KEY = 'partners_locations';
 const NOMINATIM_DELAY_MS = 1500; // Respect Nominatim 1 req/sec rate limit
@@ -82,6 +83,10 @@ const normalize = (str) => {
  * Returns a summary of successes and failures.
  */
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
         

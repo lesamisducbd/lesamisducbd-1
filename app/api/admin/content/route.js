@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { safeKvGet, safeKvSet } from '@/lib/kvCache';
 import homeData from '@/data/home.json';
+import { getSession } from '@/lib/auth';
 
 // Force dynamic execution to prevent caching content
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,10 @@ export async function GET() {
 
 // POST: Update specific section content
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
         let data = await safeKvGet(KV_KEY, null);

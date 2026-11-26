@@ -85,6 +85,8 @@ export default function PageEditor() {
                 setTimeout(() => setSaved(false), 2500);
                 originalSlugRef.current = stateToSave.slug;
                 if (overrideStatus && !pageStateToSave) setPage(prev => ({ ...prev, status: overrideStatus }));
+            } else if (res.status === 401) {
+                alert('Session expirée : reconnectez-vous dans un autre onglet, puis enregistrez à nouveau.');
             }
         } finally { setSaving(false); }
     };

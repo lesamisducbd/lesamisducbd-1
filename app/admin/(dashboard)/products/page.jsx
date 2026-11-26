@@ -825,18 +825,20 @@ export default function ProductsPage() {
                                                                     if (!editDraft.description && !editDraft.descriptionShort) {
                                                                         const newOverrides = { ...overrides };
                                                                         delete newOverrides[product.id];
-                                                                        await fetch('/api/admin/product-overrides', {
+                                                                        const res = await fetch('/api/admin/product-overrides', {
                                                                             method: 'POST',
                                                                             headers: { 'Content-Type': 'application/json' },
                                                                             body: JSON.stringify(newOverrides)
                                                                         });
+                                                                        if (!res.ok) throw new Error(`Erreur ${res.status}`);
                                                                         setOverrides(newOverrides);
                                                                     } else {
-                                                                        await fetch('/api/admin/product-overrides', {
+                                                                        const res = await fetch('/api/admin/product-overrides', {
                                                                             method: 'POST',
                                                                             headers: { 'Content-Type': 'application/json' },
                                                                             body: JSON.stringify({ [product.id]: { description: editDraft.description, descriptionShort: editDraft.descriptionShort } })
                                                                         });
+                                                                        if (!res.ok) throw new Error(`Erreur ${res.status}`);
                                                                         setOverrides(prev => ({ ...prev, [product.id]: { description: editDraft.description, descriptionShort: editDraft.descriptionShort } }));
                                                                     }
                                                                     setDescSaved(true);
@@ -862,11 +864,12 @@ export default function ProductsPage() {
                                                                 onClick={async () => {
                                                                     const newOverrides = { ...overrides };
                                                                     delete newOverrides[product.id];
-                                                                    await fetch('/api/admin/product-overrides', {
+                                                                    const res = await fetch('/api/admin/product-overrides', {
                                                                         method: 'POST',
                                                                         headers: { 'Content-Type': 'application/json' },
                                                                         body: JSON.stringify(newOverrides)
                                                                     });
+                                                                    if (!res.ok) { alert('Erreur lors de la sauvegarde'); return; }
                                                                     setOverrides(newOverrides);
                                                                     setEditingId(null);
                                                                 }}

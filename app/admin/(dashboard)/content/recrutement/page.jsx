@@ -102,11 +102,12 @@ export default function RecrutementContentPage() {
     const save = async () => {
         setSaving(true);
         try {
-            await fetch('/api/admin/content/recrutement', {
+            const res = await fetch('/api/admin/content/recrutement', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sections, meta })
             });
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } catch { alert('Erreur lors de la sauvegarde'); }

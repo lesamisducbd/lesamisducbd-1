@@ -1,5 +1,6 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 
 const PARTNERS_KEY = 'partners_locations';
 
@@ -14,6 +15,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const { id, name, address, zip, city, lat, lng } = await request.json();
 
@@ -49,6 +54,10 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

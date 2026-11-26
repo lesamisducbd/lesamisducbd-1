@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
+import { getSession } from '@/lib/auth';
 
 // Default content for each page (used as fallback)
 const DEFAULTS = {
@@ -93,6 +94,10 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) {
+    if (!(await getSession())) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const { page } = await params;
     try {
         const body = await request.json();

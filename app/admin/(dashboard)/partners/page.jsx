@@ -207,6 +207,7 @@ export default function PartnersAdmin() {
                 body: JSON.stringify({ rows, exactSync: syncExact }),
             });
             const data = await res.json();
+            if (!res.ok) { alert(`Erreur: ${data.error}`); return; }
             setImportResult(data);
             if (data.success) fetchPartners();
         } catch (err) {
