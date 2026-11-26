@@ -358,6 +358,20 @@
     cursor: pointer;
 }
 
+/* Aspect identique sur tous les navigateurs (Safari ignore la hauteur d'un menu natif) et flèche espacée du bord. */
+select.select {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 40px;
+    min-width: 110px;
+    padding-right: 36px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23112924' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+
+input.select {
+    height: 40px;
+}
+
 .select:focus-visible {
     outline: 2px solid #00FF94;
 }
