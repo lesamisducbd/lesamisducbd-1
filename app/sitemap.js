@@ -1,6 +1,6 @@
 import { SITE_URL } from './shared-metadata';
 import { productService } from '@/lib/services/productService';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 export const revalidate = 3600; // Revalidate sitemap every hour
 
@@ -10,7 +10,7 @@ export default async function sitemap() {
     // Fetch products and builder pages in parallel
     const [products, builderPages] = await Promise.all([
         productService.getProducts().catch(() => []),
-        safeKvGet('builder_pages', {}),
+        freshKvGet('builder_pages', {}),
     ]);
 
     const staticRoutes = [

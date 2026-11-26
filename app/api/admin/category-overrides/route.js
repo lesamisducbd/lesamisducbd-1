@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const CATEGORY_OVERRIDES_KEY = 'category_overrides';
 
@@ -35,6 +36,7 @@ export async function POST(request) {
         }
 
         await kv.set(CATEGORY_OVERRIDES_KEY, cleaned);
+        publishKvWrite(CATEGORY_OVERRIDES_KEY, cleaned);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[Category Overrides API] POST error:', error);

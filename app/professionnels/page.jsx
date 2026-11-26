@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header/Header';
 
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 export const metadata = {
     title: 'Professionnels - Les Amis du CBD',
@@ -25,8 +25,8 @@ const HEADER_PROPS = {
 
 export default async function BuralistesPage() {
     const [globalContent, initialPartners] = await Promise.all([
-        safeKvGet('global_content', null),
-        safeKvGet('partners_locations', [])
+        freshKvGet('global_content', null),
+        freshKvGet('partners_locations', [])
     ]);
 
     return (

@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const PAGE_KEY = 'content:usages';
 
@@ -16,11 +17,8 @@ export async function GET() {
 
 export async function POST(req) {
     try {
-        // Authenticate admin request
-        const token = req.cookies.get('admin_token')?.value;
-        if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-        const decoded = await verifyToken(token);
-        if (!decoded || decoded.role !== 'admin') {
+        // Tout compte admin connecté (editor ou superadmin)
+        if (!(await getSession())) {
             return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
         }
 
@@ -32,6 +30,7 @@ export async function POST(req) {
 
         // Save
         await kv.set(PAGE_KEY, mergedData);
+        publishKvWrite(PAGE_KEY, mergedData);
 
         return NextResponse.json({ success: true, data: mergedData });
     } catch (error) {

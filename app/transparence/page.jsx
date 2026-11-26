@@ -1,6 +1,6 @@
 
 import TransparenceClient from './TransparenceClient';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 export const metadata = {
     title: 'Transparence et Analyses | Les Amis du CBD',
@@ -11,8 +11,8 @@ export const revalidate = 3600;
 
 export default async function TransparencePage() {
     const [globalContent, content] = await Promise.all([
-        safeKvGet('global_content', null),
-        safeKvGet('transparence_content', null)
+        freshKvGet('global_content', null),
+        freshKvGet('transparence_content', null)
     ]);
 
     return <TransparenceClient globalContent={globalContent} content={content} />;

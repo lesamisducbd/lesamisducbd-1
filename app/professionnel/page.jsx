@@ -1,4 +1,4 @@
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 import { Suspense } from 'react';
 import ProfessionnelClient from './ProfessionnelClient';
 import { SHARED_TITLE } from '@/app/shared-metadata';
@@ -40,8 +40,8 @@ export default async function ProfessionnelPage() {
     let content = DEFAULTS;
     let globalContent = null;
     const [kvData, globalData] = await Promise.all([
-        safeKvGet('professionnel_content', null),
-        safeKvGet('global_content', null)
+        freshKvGet('professionnel_content', null),
+        freshKvGet('global_content', null)
     ]);
     if (kvData) content = { ...DEFAULTS, ...kvData };
     if (globalData) globalContent = globalData;

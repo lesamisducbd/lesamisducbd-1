@@ -1,6 +1,6 @@
 
 import LivraisonClient from './LivraisonClient';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 export const metadata = {
     title: 'Livraison et Expédition | Les Amis du CBD',
@@ -11,8 +11,8 @@ export const revalidate = 3600;
 
 export default async function LivraisonPage() {
     const [globalContent, content] = await Promise.all([
-        safeKvGet('global_content', null),
-        safeKvGet('livraison_content', null)
+        freshKvGet('global_content', null),
+        freshKvGet('livraison_content', null)
     ]);
 
     return <LivraisonClient globalContent={globalContent} content={content} />;

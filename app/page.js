@@ -1,6 +1,6 @@
 import PageBuilder from '@/components/PageBuilder';
 import { toTitleCase } from '@/lib/utils/titleCase';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 import homeData from '@/data/home.json';
 import { productService } from '@/lib/services/productService';
 import { SHARED_TITLE, SHARED_DESCRIPTION } from './shared-metadata';
@@ -16,7 +16,7 @@ export const metadata = {
 };
 
 async function getData() {
-  const data = await safeKvGet('home_content', null);
+  const data = await freshKvGet('home_content', null);
   if (data && data.sections && data.sections.length > 0) return data;
   return homeData;
 }
@@ -83,9 +83,9 @@ export default async function Home() {
   const [data, allProducts, vitrineConfig, globalConfig, categoryOverrides] = await Promise.all([
     getData(),
     productService.getProducts().catch(() => []),
-    safeKvGet('vitrine_config', null),
-    safeKvGet('global_content', null),
-    safeKvGet('category_overrides', {})
+    freshKvGet('vitrine_config', null),
+    freshKvGet('global_content', null),
+    freshKvGet('category_overrides', {})
   ]);
 
   const catOverrides = categoryOverrides || {};

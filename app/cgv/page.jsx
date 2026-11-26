@@ -1,6 +1,6 @@
 
 import CgvClient from './CgvClient';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 export const metadata = {
     title: 'Conditions Générales de Vente | Les Amis du CBD',
@@ -11,8 +11,8 @@ export const revalidate = 3600;
 
 export default async function CgvPage() {
     let [globalContent, content] = await Promise.all([
-        safeKvGet('global_content', null),
-        safeKvGet('cgv_content', null)
+        freshKvGet('global_content', null),
+        freshKvGet('cgv_content', null)
     ]);
 
     if (!content || !content.sections) {

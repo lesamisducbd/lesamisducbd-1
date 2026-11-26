@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const CATEGORIES_KEY = 'product_categories';
 
@@ -33,6 +34,7 @@ export async function POST(request) {
         }
 
         await kv.set(CATEGORIES_KEY, body);
+        publishKvWrite(CATEGORIES_KEY, body);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[Product Categories API] POST error:', error);

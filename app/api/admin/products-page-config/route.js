@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const PAGE_CONFIG_KEY = 'products_page_config';
 
@@ -26,6 +27,7 @@ export async function POST(request) {
         }
 
         await kv.set(PAGE_CONFIG_KEY, body);
+        publishKvWrite(PAGE_CONFIG_KEY, body);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[Products Page Config API] POST error:', error);

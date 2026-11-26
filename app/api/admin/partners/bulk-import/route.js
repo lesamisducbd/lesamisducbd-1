@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const PARTNERS_KEY = 'partners_locations';
 const NOMINATIM_DELAY_MS = 1500; // Respect Nominatim 1 req/sec rate limit
@@ -206,6 +207,7 @@ export async function POST(request) {
 
         // Save the updated list
         await kv.set(PARTNERS_KEY, partners);
+        publishKvWrite(PARTNERS_KEY, partners);
 
         return NextResponse.json({
             success: true,

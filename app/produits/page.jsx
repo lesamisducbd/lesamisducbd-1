@@ -1,6 +1,6 @@
 
 import { productService } from '@/lib/services/productService';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 import ProductsClient from './ProductsClient';
 
 import { SITE_URL } from '@/app/shared-metadata';
@@ -18,14 +18,14 @@ export const revalidate = 3600;
 export default async function ProductsPage() {
     const [products, hiddenIds, globalContent, productOrder, categoryOverrides, pageConfigData, productOverrides, productCategories, groupVisibility] = await Promise.all([
         productService.getProducts().catch(() => []),
-        safeKvGet('hidden_products', []),
-        safeKvGet('global_content', null),
-        safeKvGet('product_order', []),
-        safeKvGet('category_overrides', {}),
-        safeKvGet('products_page_config', null),
-        safeKvGet('product_overrides', {}),
-        safeKvGet('product_categories', null),
-        safeKvGet('product_group_visibility', {})
+        freshKvGet('hidden_products', []),
+        freshKvGet('global_content', null),
+        freshKvGet('product_order', []),
+        freshKvGet('category_overrides', {}),
+        freshKvGet('products_page_config', null),
+        freshKvGet('product_overrides', {}),
+        freshKvGet('product_categories', null),
+        freshKvGet('product_group_visibility', {})
     ]);
 
     const pageConfig = pageConfigData || {

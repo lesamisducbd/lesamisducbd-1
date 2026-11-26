@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const VITRINE_KEY = 'vitrine_config';
 const HIDDEN_KEY = 'hidden_products';
@@ -59,6 +60,14 @@ export async function POST(request) {
 
         await Promise.all(ops);
 
+        if (Array.isArray(body.flowers) || Array.isArray(body.resins)) {
+            publishKvWrite(VITRINE_KEY, {
+                flowers: Array.isArray(body.flowers) ? body.flowers : [],
+                resins: Array.isArray(body.resins) ? body.resins : [],
+            });
+        }
+        if (Array.isArray(body.hiddenIds)) publishKvWrite(HIDDEN_KEY, body.hiddenIds);
+        if (Array.isArray(body.productOrder)) publishKvWrite(ORDER_KEY, body.productOrder);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[Vitrine API] POST error:', error);

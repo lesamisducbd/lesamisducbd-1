@@ -1,6 +1,7 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 const PARTNERS_KEY = 'partners_locations';
 
@@ -46,6 +47,7 @@ export async function POST(request) {
         }
 
         await kv.set(PARTNERS_KEY, partners);
+        publishKvWrite(PARTNERS_KEY, partners);
         return NextResponse.json({ success: true, partners });
     } catch (error) {
         console.error('[API/Partners] Post error:', error);
@@ -70,6 +72,7 @@ export async function DELETE(request) {
         partners = partners.filter(p => p.id !== id);
 
         await kv.set(PARTNERS_KEY, partners);
+        publishKvWrite(PARTNERS_KEY, partners);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[API/Partners] Delete error:', error);

@@ -1,6 +1,6 @@
 import UsagesClient from './UsagesClient';
 import { SHARED_TITLE } from '@/app/shared-metadata';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 
 export const metadata = {
@@ -13,8 +13,8 @@ export const metadata = {
 
 export default async function UsagesPage() {
     const [globalContent, content] = await Promise.all([
-        safeKvGet('global_content', null),
-        safeKvGet('content:usages', null)
+        freshKvGet('global_content', null),
+        freshKvGet('content:usages', null)
     ]);
 
     if (content && !content.sections) {

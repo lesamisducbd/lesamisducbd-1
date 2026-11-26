@@ -1,4 +1,4 @@
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 import EssentielClient from './EssentielClient';
 import { SHARED_TITLE } from '../shared-metadata';
 
@@ -42,8 +42,8 @@ export default async function EssentielPage() {
     let content = DEFAULTS;
     let globalContent = null;
     const [kvData, globalData] = await Promise.all([
-        safeKvGet('essentiel_content', null),
-        safeKvGet('global_content', null)
+        freshKvGet('essentiel_content', null),
+        freshKvGet('global_content', null)
     ]);
     if (kvData) content = { ...DEFAULTS, ...kvData };
     if (globalData) globalContent = globalData;

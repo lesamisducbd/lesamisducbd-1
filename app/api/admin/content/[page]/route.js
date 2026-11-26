@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite, purgePaths } from '@/lib/kvCache';
 
 // Default content for each page (used as fallback)
 const DEFAULTS = {
@@ -102,6 +103,9 @@ export async function POST(request, { params }) {
     try {
         const body = await request.json();
         await kv.set(`${page}_content`, body);
+        publishKvWrite(`${page}_content`, body);
+        // Menus et pied de page : présents sur toutes les pages
+        if (page === 'global') purgePaths([['/', 'layout']]);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error(`[Content API] POST error for ${page}:`, error);

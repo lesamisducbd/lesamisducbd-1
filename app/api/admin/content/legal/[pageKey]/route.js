@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { kv } from '@vercel/kv';
 import { getSession } from '@/lib/auth';
+import { publishKvWrite } from '@/lib/kvCache';
 
 export async function GET(req, { params }) {
     try {
@@ -37,6 +38,7 @@ export async function POST(req, { params }) {
         }
 
         await kv.set(`${pageKey}_content`, data);
+        publishKvWrite(`${pageKey}_content`, data);
 
         return NextResponse.json({ success: true, message: `Contenu ${pageKey} mis à jour` }, { status: 200 });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { safeKvGet, safeKvSet, invalidateKvCache } from '@/lib/kvCache';
+import { safeKvGet, safeKvSet, invalidateKvCache, purgePaths } from '@/lib/kvCache';
 import { recordAdminAction, getClientIp } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ const CONTENT_KEYS = [
     { id: 'home', key: 'home_content', label: 'Accueil' },
     { id: 'essentiel', key: 'essentiel_content', label: "L'Essentiel" },
     { id: 'professionnel', key: 'professionnel_content', label: 'Professionnel' },
-    { id: 'usages', key: 'usages_content', label: 'CBD & Usages' },
+    { id: 'usages', key: 'content:usages', label: 'CBD & Usages' },
     { id: 'transparence', key: 'transparence_content', label: 'Transparence' },
     { id: 'recrutement', key: 'recrutement_content', label: 'Recrutement' },
     { id: 'global', key: 'global_content', label: 'Éléments Globaux' },
@@ -72,7 +72,7 @@ async function collectBackupData(username) {
     return {
         meta: {
             app: 'Les Amis du CBD',
-            version: '1.0',
+            version: '1.1',
             generatedAt: timestamp,
             generatedBy: username || 'admin',
             summary: {
@@ -213,6 +213,8 @@ export async function POST(request) {
         if (selected.content && data.content && typeof data.content === 'object') {
             let restoredPagesCount = 0;
             for (const { id, key } of CONTENT_KEYS) {
+                // Les sauvegardes 1.0 lisaient Usages sous une mauvaise clé : ne pas écraser la page avec
+                if (id === 'usages' && backupData.meta?.version === '1.0') continue;
                 if (data.content[id] !== undefined && data.content[id] !== null) {
                     await safeKvSet(key, data.content[id]);
                     restoredPagesCount++;
@@ -231,6 +233,8 @@ export async function POST(request) {
 
         // Invalidate in-memory cache so updates are immediate
         invalidateKvCache();
+        // En-tête et pied de page (global_content) concernent tout le site
+        purgePaths([['/', 'layout']]);
 
         recordAdminAction({
             username: session.username,

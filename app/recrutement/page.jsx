@@ -1,6 +1,6 @@
 
 import RecruitmentClient from './RecruitmentClient';
-import { safeKvGet } from '@/lib/kvCache';
+import { freshKvGet } from '@/lib/kvCache';
 
 export const metadata = {
     title: "Rejoignez l'équipe",
@@ -15,8 +15,8 @@ export const revalidate = 3600;
 export default async function RecrutementPage() {
 
     const [globalContent, content] = await Promise.all([
-        safeKvGet('global_content', null),
-        safeKvGet('recrutement_content', null)
+        freshKvGet('global_content', null),
+        freshKvGet('recrutement_content', null)
     ]);
 
     if (content && !content.sections) {
