@@ -1,6 +1,8 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { jwtVerify } from 'jose';
+import { isMaintenanceEnabled } from '@/lib/maintenance';
+import { MAINTENANCE_HTML } from '@/lib/maintenancePage';
 
 const secretKey = process.env.JWT_SECRET || 'super-secret-key-change-this';
 const key = new TextEncoder().encode(secretKey);
@@ -19,9 +21,48 @@ const nextAuthMiddleware = withAuth(
     }
 );
 
+// Restent accessibles en maintenance : le back-office et sa connexion.
+// (/api/auth/login et logout sont ceux de l'admin ; les clients passent par NextAuth.)
+function isMaintenanceExempt(pathname) {
+    return pathname === '/admin' || pathname.startsWith('/admin/')
+        || pathname.startsWith('/api/admin/')
+        || pathname === '/api/auth/login' || pathname === '/api/auth/logout'
+        || pathname === '/robots.txt';
+}
+
+async function hasAdminToken(req) {
+    const token = req.cookies.get('admin_token')?.value;
+    if (!token) return false;
+    try {
+        await jwtVerify(token, key, { algorithms: ['HS256'] });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function maintenanceResponse(pathname) {
+    const headers = { 'Cache-Control': 'no-store', 'Retry-After': '3600' };
+
+    if (pathname.startsWith('/api/')) {
+        const message = 'Site en maintenance, veuillez réessayer plus tard.';
+        return NextResponse.json({ success: false, message, error: message }, { status: 503, headers });
+    }
+
+    return new NextResponse(MAINTENANCE_HTML, {
+        status: 503,
+        headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8' }
+    });
+}
+
 export default async function middleware(req) {
     const { pathname, searchParams } = req.nextUrl;
     
+    // Mode maintenance : les administrateurs connectés gardent l'accès au site.
+    if (!isMaintenanceExempt(pathname) && await isMaintenanceEnabled() && !(await hasAdminToken(req))) {
+        return maintenanceResponse(pathname);
+    }
+
     // We create a base response object. Next.js middleware allows returning this or modifying it.
     let response = NextResponse.next();
 
@@ -80,12 +121,9 @@ export default async function middleware(req) {
 }
 
 export const config = {
-    // Le middleware ne tourne que si necessaire (comptes, admin, code de parrainage) :
-    // les pages publiques passent directement par le cache CDN.
+    // Toutes les pages et API (necessaire au mode maintenance), hors fichiers statiques.
+    // Les pages publiques restent servies par le cache CDN apres le passage du middleware.
     matcher: [
-        "/admin/:path*",
-        "/account/:path*",
-        "/checkout/:path*",
-        { source: "/:path*", has: [{ type: "query", key: "sponsorship" }] }
+        "/((?!_next/static|_next/image|images/|icons/|.*\\.(?:png|jpe?g|webp|avif|svg|ico|css|js|woff2?|geojson)$).*)"
     ]
 };

@@ -1,0 +1,110 @@
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 0.5rem;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1F4B40;
+}
+
+.subtitle {
+    margin: 0 0 2rem;
+    color: #64748b;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 1.5rem;
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.badgeOn,
+.badgeOff {
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.badgeOn {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.badgeOff {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.buttonOn,
+.buttonOff {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.buttonOn {
+    background: #1F4B40;
+    color: #00FF94;
+}
+
+.buttonOff {
+    background: #b91c1c;
+    color: #FFFFFF;
+}
+
+.buttonOn:disabled,
+.buttonOff:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.meta {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.notes {
+    margin: 0;
+    padding: 1.25rem 0 0 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #475569;
+}
+
+.error {
+    margin-bottom: 1.5rem;
+    padding: 0.85rem 1.25rem;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
