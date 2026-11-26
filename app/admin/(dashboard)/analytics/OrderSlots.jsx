@@ -2,10 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
-import { DAY_LABELS } from '@/lib/utils/orderSlots';
+import { DAY_LABELS, countWeeks, rankSlots } from '@/lib/utils/orderSlots';
 import styles from './Analytics.module.css';
 
 const frDate = iso => iso.split('-').reverse().join('/');
+const frNumber = n => n.toLocaleString('fr-FR');
+
+const SLOT_GROUPS = [
+    { title: 'Les plus chargés (à éviter)', firstHour: 0, lastHour: 24, busiest: true },
+    { title: 'Calmes en journée (8h-19h)', firstHour: 8, lastHour: 19 },
+    { title: 'Calmes tôt le matin (5h-10h)', firstHour: 5, lastHour: 10 },
+    { title: 'Calmes le soir (18h-minuit)', firstHour: 18, lastHour: 24 },
+    { title: 'Calmes la nuit (0h-6h)', firstHour: 0, lastHour: 6 },
+];
 
 export default function OrderSlots() {
     const [data, setData] = useState(null);
@@ -24,6 +33,7 @@ export default function OrderSlots() {
         ? Array.from({ length: 24 }, (_, h) => h).filter(h => (h >= 7 && h <= 21) || data.grid.some(day => day[h] > 0))
         : [];
     const max = data ? Math.max(1, ...data.grid.flat()) : 1;
+    const weeks = data && data.total > 0 ? countWeeks(data.from, data.to) : 1;
 
     return (
         <div className={styles.sectionBlock}>
@@ -38,7 +48,12 @@ export default function OrderSlots() {
             {data && data.total > 0 && (
                 <>
                     <p className={styles.subtitle}>
-                        {data.total.toLocaleString('fr-FR')} commandes du {frDate(data.from)} au {frDate(data.to)} (heure de la boutique).
+                        {frNumber(data.total)} commandes du {frDate(data.from)} au {frDate(data.to)}, soit environ {Math.round(weeks)} semaines (heure de la boutique).
+                    </p>
+
+                    <h3 className={styles.slotsSubtitle}>Total sur toute la période</h3>
+                    <p className={styles.slotsHelp}>
+                        Chaque case additionne les commandes reçues ce jour-là pendant cette heure, sur toute la période (ce n&apos;est pas une moyenne). Plus la case est verte, plus il y en a eu.
                     </p>
 
                     <div className={styles.slotsScroll}>
@@ -68,15 +83,25 @@ export default function OrderSlots() {
                         </table>
                     </div>
 
-                    <h3 className={styles.slotsSubtitle}>Créneaux de 3 h les plus calmes en journée (8h-19h)</h3>
-                    <ul className={styles.listBlock}>
-                        {data.quietest.slice(0, 3).map(slot => (
-                            <li key={slot.day} className={styles.listItem}>
-                                <span>{DAY_LABELS[slot.day]} de {slot.start}h à {slot.end}h</span>
-                                <strong>{slot.average.toLocaleString('fr-FR')} cmd en moyenne</strong>
-                            </li>
+                    <h3 className={styles.slotsSubtitle}>Moyenne par semaine, par créneau de 3 h</h3>
+                    <p className={styles.slotsHelp}>
+                        Nombre de commandes attendues pendant ces 3 heures, un jour ordinaire. Un seul créneau par jour dans chaque liste.
+                    </p>
+                    <div className={styles.slotsGroups}>
+                        {SLOT_GROUPS.map(group => (
+                            <div key={group.title}>
+                                <h4 className={styles.slotsGroupTitle}>{group.title}</h4>
+                                <ul className={styles.listBlock}>
+                                    {rankSlots(data.grid, weeks, group).map(slot => (
+                                        <li key={slot.day} className={styles.listItem}>
+                                            <span>{DAY_LABELS[slot.day]} {slot.start}h-{slot.end}h</span>
+                                            <strong>{frNumber(slot.average)} cmd</strong>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </>
             )}
         </div>
