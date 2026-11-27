@@ -554,10 +554,15 @@ input.select {
     background: #94a3b8;
 }
 
-/* Chiffre d'affaires avant / après */
+/* Hors des deux périodes comparées */
+.barOutside {
+    background: #e2e8f0;
+}
+
+/* Comparaison des ventes */
 .revenueSummary {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    margin: 16px 0 12px;
+    margin: 20px 0 12px;
 }
 
 .barLabel {

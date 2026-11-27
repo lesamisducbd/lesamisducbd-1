@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { safeKvGet, safeKvSet } from '@/lib/kvCache';
 import { shopToday } from '@/lib/utils/orderSlots';
-import { BEFORE_FROM, compareRevenue } from '@/lib/utils/revenue';
+import { dailyTotals } from '@/lib/utils/revenue';
 
 export const dynamic = 'force-dynamic';
 
-const CACHE_KEY = 'analytics:revenue_v1';
+const CACHE_KEY = 'analytics:revenue_v2';
 // Comme les commandes par heure : un seul appel PrestaShop toutes les 12 h au maximum.
 const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const MEMORY_TTL_MS = 60 * 60 * 1000;
@@ -16,16 +16,16 @@ async function fetchValidOrders() {
     const url = process.env.PRESTASHOP_API_URL;
     const key = process.env.PRESTASHOP_API_KEY;
     const orders = [];
-    // Du plus récent au plus ancien, jusqu'à dépasser le début de la période de référence.
+    // Tout l'historique, par lots.
     for (let offset = 0; ; offset += PAGE_SIZE) {
         const res = await fetch(
-            `${url}/orders?display=[date_add,total_paid_tax_excl,valid]&sort=[id_DESC]&limit=${offset},${PAGE_SIZE}&output_format=JSON&ws_key=${key}`,
+            `${url}/orders?display=[date_add,total_paid_tax_excl,total_paid_tax_incl,valid]&sort=[id_ASC]&limit=${offset},${PAGE_SIZE}&output_format=JSON&ws_key=${key}`,
             { cache: 'no-store', signal: AbortSignal.timeout(15000) }
         );
         if (!res.ok) throw new Error(`PrestaShop ${res.status}`);
         const page = (await res.json()).orders || [];
         orders.push(...page.filter(order => String(order.valid) === '1'));
-        if (page.length < PAGE_SIZE || page[page.length - 1].date_add < BEFORE_FROM) return orders;
+        if (page.length < PAGE_SIZE) return orders;
     }
 }
 
@@ -40,7 +40,7 @@ export async function GET() {
     }
 
     try {
-        const result = { ...compareRevenue(await fetchValidOrders(), shopToday()), computedAt: Date.now() };
+        const result = { ...dailyTotals(await fetchValidOrders(), shopToday()), computedAt: Date.now() };
         await safeKvSet(CACHE_KEY, result, MEMORY_TTL_MS);
         return NextResponse.json(result);
     } catch (error) {

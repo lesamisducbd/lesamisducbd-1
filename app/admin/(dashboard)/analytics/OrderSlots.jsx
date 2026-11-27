@@ -85,7 +85,7 @@ function Evolution({ buckets, unit }) {
 }
 
 // Menu déroulant. La valeur d'origine (texte ou nombre) est rendue à onChange.
-function Filter({ label, options, value, onChange }) {
+export function Filter({ label, options, value, onChange }) {
     return (
         <label className={styles.filterField}>
             <span className={styles.filterLabel}>{label}</span>
