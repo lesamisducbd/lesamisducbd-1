@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import styles from './Analytics.module.css';
 import OrderSlots from './OrderSlots';
+import Revenue from './Revenue';
 import Link from 'next/link';
 import { Smartphone, Monitor, Globe, MousePointer, ShoppingBag } from 'lucide-react';
 
@@ -275,6 +276,8 @@ export default function AnalyticsDashboard() {
                     <div className={styles.kpiSub}>{topPage ? `${topPage.views.toLocaleString('fr-FR')} vues (${topPage.avgTime}s en moy.)` : ''}</div>
                 </div>
             </div>
+
+            <Revenue />
 
             <OrderSlots />
 
